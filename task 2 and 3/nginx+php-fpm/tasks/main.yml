@@ -1,0 +1,33 @@
+---
+# tasks file for nginx+php-fpm
+- name: Install Nginx
+  apt: name=nginx update_cache=yes state=latest
+  tags: nginx
+
+- name: Install Nginx - Start Nginx and Enable it on the every boot
+  service: name=nginx state=started enabled=yes
+  tags: nginx
+
+- name: Install PHP-FPM
+  apt: name=php-fpm update_cache=yes state=latest
+  tags: fpm
+
+- name: Install Nginx - create custom DocumentRoot directory
+  file: dest=/opt/nginx/ansible owner=www-data group=www-data state=directory
+
+- name: Make default.conf
+  template: "src=default.j2 dest=/etc/nginx/sites-available/default"
+  notify: reload nginx
+
+- name: Touch a file
+  ansible.builtin.file:
+    path: /opt/nginx/ansible/index.php
+    state: touch
+    owner: www-data
+    group: www-data
+    mode: u=rw,g=r,o=r
+
+- name: Create phpinfo
+  shell: "echo '<?php phpinfo();?>' >> /opt/nginx/ansible/index.php"
+  notify: reload nginx
+  tags: test

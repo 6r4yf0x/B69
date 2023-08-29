@@ -1,0 +1,6 @@
+---
+# defaults file for nginx+php-fpm
+listenport: 80
+rootpath: /opt/nginx/ansible/
+indexes: index.php
+phpenable: true

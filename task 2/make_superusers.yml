@@ -1,0 +1,60 @@
+# 1) ssh-keygen -t rsa -b 4096 -f ./user2
+# 2) ssh-keygen -t rsa -b 4096 -f ./user3
+# 3) sed -i -e '1 s/^/user2_pub: /;' ./user2.pub
+# 4) sed -i -e '1 s/^/user3_pub: /;' ./user3.pub
+# 5) cat user2.pub > users.pub
+# 6) cat user3.pub >> users.pub
+# 7) ansible-vault encrypt users.pub
+# 4) ansible-playbook make_superusers.yml --ask-vault-password
+---
+- name: Add users and distibute ssh-key and add users to sudoers
+  become: true
+  hosts: "{{ setupHosts }}"
+  vars_prompt:
+    - name: "setupHosts"
+      prompt: "Which hosts would you like to setup?"
+      private: false
+  tasks:
+    - name: import secret variable file
+      include_vars: "users.pub"
+      no_log: true
+
+    - name: Add user user2
+      user:
+        name: user2
+        comment: user user2 for test distribute ssh-key
+        shell: /bin/bash
+        create_home: true
+
+    - name: Add user user3
+      user:
+        name: user3
+        comment: user user3 for test distribute ssh-key
+        shell: /bin/bash
+        create_home: true
+
+    - name: Deploy SSH Key from user2
+      authorized_key:
+        user: user2
+        key: "{{ user2_pub }}"
+        state: present
+      no_log: true
+
+    - name: Deploy SSH Key from user3
+      authorized_key:
+        user: user3
+        key: "{{ user3_pub }}"
+        state: present
+      no_log: true
+
+    - name: Add user2 to the sudoers
+      copy:
+        dest: "/etc/sudoers.d/user2"
+        content: "user2  ALL=(ALL)  NOPASSWD: ALL"
+        validate: visudo -cf %s
+
+    - name: Add user3 to the sudoers
+      copy:
+        dest: "/etc/sudoers.d/user3"
+        content: "user3  ALL=(ALL)  NOPASSWD: ALL"
+        validate: visudo -cf %s

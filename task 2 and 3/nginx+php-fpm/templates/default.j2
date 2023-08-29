@@ -1,0 +1,26 @@
+
+server {
+	
+	listen {{ listenport }} default_server;
+	root {{ rootpath }};
+	index {{ indexes }};
+	server_name _;
+	location / {
+		try_files $uri $uri/ =404;
+	}
+
+{% if phpenable is defined %}
+location ~ \.php$ {
+#	include snippets/fastcgi-php.conf;
+fastcgi_pass unix:/run/php/php8.1-fpm.sock;
+include /etc/nginx/fastcgi.conf;
+}
+{% endif %}
+
+	# deny access to .htaccess files, if Apache's document root
+	# concurs with nginx's one
+	#
+	#location ~ /\.ht {
+	#	deny all;
+	#}
+}
